@@ -1,0 +1,98 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Submit Project - InsightHub</title>
+    <link rel="stylesheet" href="style.css">
+</head>
+<body>
+    <nav>
+        <div class="logo">InsightHub</div>
+        <div class="links">
+            <a href="index.html">Home</a>
+            <a href="submit.html">Submit Project</a>
+            <a href="#" onclick="logout()">Logout</a>
+        </div>
+    </nav>
+
+    <div class="form">
+        <h2>Submit Research Project</h2>
+        <p id="error" class="error"></p>
+        <p id="success" class="success"></p>
+
+        <input type="text" id="title" placeholder="Project Title"><br>
+        <textarea id="abstract" placeholder="Abstract / Description" rows="5"></textarea><br>
+        <select id="department">
+            <option value="">Select Department</option>
+            <option value="Computer Science">Computer Science</option>
+            <option value="Engineering">Engineering</option>
+            <option value="Business">Business</option>
+            <option value="Mathematics">Mathematics</option>
+        </select><br>
+        <input type="text" id="supervisor" placeholder="Supervisor Name"><br>
+        <input type="number" id="year" placeholder="Year of Completion"><br>
+        <input type="text" id="tags" placeholder="Tags (e.g. AI, Machine Learning)"><br>
+        <input type="text" id="technology" placeholder="Technologies Used (e.g. Python, React)"><br>
+        <input type="url" id="file_url" placeholder="Link to Project File (Google Drive, PDF link)"><br>
+        <input type="url" id="video_url" placeholder="Video/Demo Link (Optional)"><br>
+        <button onclick="submitProject()">Submit Project</button>
+    </div>
+
+    <script>
+        // Redirect if not logged in
+        const token = localStorage.getItem('token');
+        if (!token) {
+            window.location.href = 'login.html';
+        }
+
+        function logout() {
+            localStorage.removeItem('token');
+            localStorage.removeItem('user');
+            window.location.href = 'index.html';
+        }
+
+        function submitProject() {
+            const title = document.getElementById('title').value;
+            const abstract = document.getElementById('abstract').value;
+            const department = document.getElementById('department').value;
+            const supervisor = document.getElementById('supervisor').value;
+            const year = document.getElementById('year').value;
+            const tags = document.getElementById('tags').value;
+            const technology = document.getElementById('technology').value;
+            const file_url = document.getElementById('file_url').value;
+            const video_url = document.getElementById('video_url').value;
+
+            const errorElement = document.getElementById('error');
+            const successElement = document.getElementById('success');
+
+            errorElement.textContent = '';
+            successElement.textContent = '';
+
+            fetch('https://insighthub-backend-aqi5.onrender.com/api/projects', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                    'authorization': token
+                },
+                body: JSON.stringify({ title, abstract, department, supervisor, year, tags, technology, file_url, video_url })
+            })
+            .then(response => response.json())
+            .then(data => {
+                if (data.project) {
+                    successElement.textContent = 'Project submitted! Waiting for admin approval.';
+                    setTimeout(() => window.location.href = 'index.html', 2000);
+                } else {
+                    errorElement.textContent = data.error;
+                }
+            })
+            .catch(error => {
+                console.log('Error:', error);
+                errorElement.textContent = 'Could not connect to server.';
+            });
+        }
+    </script>
+</body>
+</html>
+
+

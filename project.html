@@ -1,0 +1,200 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Project - InsightHub</title>
+    <link rel="stylesheet" href="style.css">
+</head>
+<body>
+    <nav>
+        <div class="logo">InsightHub</div>
+        <div class="links">
+            <a href="index.html">Home</a>
+            <a href="submit.html" id="nav-submit" style="display:none">Submit Project</a>
+            <a href="#" id="nav-logout" style="display:none" onclick="logout()">Logout</a>
+            <a href="login.html" id="nav-login">Login</a>
+        </div>
+    </nav>
+
+    <div class="container">
+        
+        <div id="project-details">
+            <p>Loading project...</p>
+        </div>
+
+        
+        <div class="comments-section">
+            <h3>Comments</h3>
+
+        
+            <div id="comment-form" style="display:none">
+                <textarea id="comment-text" placeholder="Write a comment..." rows="3"></textarea><br>
+                <button onclick="addComment()">Post Comment</button>
+            </div>
+            <p id="comment-error" class="error"></p>
+            <p id="comment-success" class="success"></p>
+
+            <div id="comments-list">
+                <p>Loading comments...</p>
+            </div>
+        </div>
+    </div>
+
+
+
+
+    <script>
+        const token = localStorage.getItem('token');
+        const user = JSON.parse(localStorage.getItem('user'));
+
+        // Show nav options based on login status
+        if (user) {
+            document.getElementById('nav-submit').style.display = 'inline';
+            document.getElementById('nav-logout').style.display = 'inline';
+            document.getElementById('nav-login').style.display = 'none';
+            document.getElementById('comment-form').style.display = 'block';
+        }
+
+        function logout() {
+            localStorage.removeItem('token');
+            localStorage.removeItem('user');
+            window.location.href = 'index.html';
+        }
+
+        // Get project ID from URL
+        const urlParams = new URLSearchParams(window.location.search);
+        const projectId = urlParams.get('id');
+
+        if (!projectId) {
+            window.location.href = 'index.html';
+        }
+
+        // Load project details
+        fetch('https://insighthub-backend-aqi5.onrender.com/api/projects/' + projectId)
+        .then(response => response.json())
+        .then(project => {
+            if (!project) {
+                document.getElementById('project-details').innerHTML = '<p>Project not found.</p>';
+                return;
+            }
+
+            const bookmarkBtn = user ? 
+                `<button onclick="bookmarkProject()">Bookmark Project</button>` : 
+                `<p><a href="login.html">Login to bookmark this project</a></p>`;
+
+            document.getElementById('project-details').innerHTML = `
+                <h2>${project.title}</h2>
+                <p class="student-name">By: ${project.student_name}</p>
+                <div class="project-meta">
+                    <span>Department: ${project.department}</span>
+                    <span>Supervisor: ${project.supervisor}</span>
+                    <span>Year: ${project.year}</span>
+                </div>
+                <div class="project-tags">
+                    <span>Tags: ${project.tags || 'None'}</span>
+                    <span>Technology: ${project.technology || 'None'}</span>
+                </div>
+                <div class="project-abstract">
+                    <h3>Abstract</h3>
+                    <p>${project.abstract}</p>
+                </div>
+                <div class="project-links">
+                    ${project.file_url ? `<a href="${project.file_url}" target="_blank" class="btn">View Project File</a>` : ''}
+                    ${project.video_url ? `<a href="${project.video_url}" target="_blank" class="btn">Watch Demo</a>` : ''}
+                </div>
+                <div class="bookmark-section">
+                    ${bookmarkBtn}
+                </div>
+                <p id="bookmark-msg" class="success"></p>
+            `;
+        })
+        .catch(error => {
+            console.log('Error:', error);
+        });
+
+        // Bookmark project
+        function bookmarkProject() {
+            fetch('https://insighthub-backend-aqi5.onrender.com/api/bookmarks/' + projectId, {
+                method: 'POST',
+                headers: { 'authorization': token }
+            })
+            .then(response => response.json())
+            .then(data => {
+                if (data.message) {
+                    document.getElementById('bookmark-msg').textContent = '✅ Project bookmarked!';
+                } else {
+                    document.getElementById('bookmark-msg').textContent = data.error;
+                }
+            })
+            .catch(error => {
+                console.log('Error:', error);
+            });
+        }
+
+        // Load comments
+        function loadComments() {
+            fetch('https://insighthub-backend-aqi5.onrender.com/api/comments/' + projectId)
+            .then(response => response.json())
+            .then(comments => {
+                const list = document.getElementById('comments-list');
+
+                if (comments.length === 0) {
+                    list.innerHTML = '<p>No comments yet. Be the first!</p>';
+                    return;
+                }
+
+                list.innerHTML = '';
+                comments.forEach(comment => {
+                    const div = document.createElement('div');
+                    div.className = 'comment-card';
+                    div.innerHTML = `
+                        <p class="comment-author">${comment.name}</p>
+                        <p class="comment-text">${comment.content}</p>
+                        <p class="comment-date">${new Date(comment.created_at).toLocaleDateString()}</p>
+                    `;
+                    list.appendChild(div);
+                });
+            })
+            .catch(error => {
+                console.log('Error:', error);
+            });
+        }
+
+        // Add comment
+        function addComment() {
+            const content = document.getElementById('comment-text').value;
+
+            if (!content) {
+                document.getElementById('comment-error').textContent = 'Please write a comment first';
+                return;
+            }
+
+            fetch('https://insighthub-backend-aqi5.onrender.com/api/comments/' + projectId, {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                    'authorization': token
+                },
+                body: JSON.stringify({ content })
+            })
+            .then(response => response.json())
+            .then(data => {
+                if (data.id) {
+                    document.getElementById('comment-text').value = '';
+                    document.getElementById('comment-success').textContent = 'Comment posted!';
+                    document.getElementById('comment-error').textContent = '';
+                    loadComments();
+                } else {
+                    document.getElementById('comment-error').textContent = data.error;
+                }
+            })
+            .catch(error => {
+                console.log('Error:', error);
+            });
+        }
+
+        loadComments();
+    </script>
+</body>
+</html>

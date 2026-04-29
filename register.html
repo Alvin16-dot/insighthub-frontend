@@ -1,0 +1,70 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Register</title>
+    <link rel="stylesheet" href="style.css">
+</head>
+<body>
+    <nav>
+        <div class="logo">InsightHub</div>
+        <div class="links">
+            <a href="index.html">Home</a>
+            <a href="login.html">Login</a>
+            <a href="register.html">Register</a>
+        </div>
+    </nav>
+
+    <div class="form">
+        <h2>Create Account</h2>
+        <p id="error" class="error"></p>
+        <p id="success" class="success"></p>
+
+        <input type="text" id="name" placeholder="Full Name" required><br>
+        <input type="email" id="email" placeholder="Email" required><br>
+        <input type="password" id="password" placeholder="Password" required><br>
+        <button onclick="register()">Register</button>
+
+        <p>Already have an account? <a href="login.html">Login here</a></p>
+    </div>
+
+<script>
+    function register() {
+        const name = document.getElementById('name').value;
+        const email = document.getElementById('email').value;
+        const password = document.getElementById('password').value;
+        const errorElement = document.getElementById('error');
+        const successElement = document.getElementById('success');
+
+        // Clear previous messages
+        errorElement.textContent = '';
+        successElement.textContent = '';
+
+        fetch('https://insighthub-backend-aqi5.onrender.com/api/register', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ name, email, password })
+        })
+        .then(response => {
+            if (response.ok) {
+                successElement.textContent = 'Registration successful Redirecting to login...';
+                setTimeout(() => window.location.href = 'login.html', 2000);
+            }
+            return response.json();
+        })
+        .then(data => {
+            if (errorElement.textContent === '' && data.error) {
+                errorElement.textContent = data.error;
+            }
+        })
+        .catch(error => {
+            console.log('Error:', error);
+            errorElement.textContent = 'Could not connect to server. Check if server.js is running.';
+        });
+}
+</script>
+
+    
+</body>
+</html>
