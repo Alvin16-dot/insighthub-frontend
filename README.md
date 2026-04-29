@@ -1,4 +1,4 @@
-# InsightHub - Academic Research and Capstone Repository
+# InsightHub
 
 ## Project Overview
 InsightHub is a centralized digital platform for storing and exploring student research papers and capstone projects. Students can submit their projects, search and discover other projects, bookmark favourites, and leave comments. Admins can review and approve or reject submissions before they go public.
